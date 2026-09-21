@@ -18,6 +18,8 @@ func main() {
 
 	godotenv.Load()
 	mongoURI := os.Getenv("MONGO_URI")
+	dbName := os.Getenv("db")
+	collectionName := os.Getenv("collection")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -27,7 +29,7 @@ func main() {
 		log.Fatalf("Erro ao conectar no MongoDB: %v", err)
 	}
 
-	collection := client.Database("encurtador").Collection("encurtador")
+	collection := client.Database(dbName).Collection(collectionName)
 
 	indexModel := mongo.IndexModel{
 		Keys: bson.M{"original_url": 1},

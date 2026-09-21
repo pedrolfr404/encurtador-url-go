@@ -34,7 +34,7 @@ func (h *URLHandler) ShortenURL(c *gin.Context) {
 	}
 
 	if utils.IsAlreadyShortened(req.URL) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "URL Already Shortened"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "URL Already Shortened or blocked domain"})
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -51,9 +51,9 @@ func (h *URLHandler) ShortenURL(c *gin.Context) {
 		return
 	}
 
-	shortID, err := utils.GeneratorShortId(6)
+	shortID, err := utils.GeneratorShortId(6, req.URL)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Generating code error"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 	}
 
 	newURL := models.URL{
@@ -69,9 +69,29 @@ func (h *URLHandler) ShortenURL(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"short_url": h.BaseURL + newURL.ID,
+		"short_url":    h.BaseURL + newURL.ID,
 		"original_url": newURL.OriginalUrl,
-		"reused": false,
+		"reused":       false,
 	})
 
+}
+
+func (h *URLHandler) Redirect(c *gin.Context) {
+	shortID := c.Param("id")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var urlDoc models.URL
+	err := h.Collection.FindOne(ctx, bson.M{"shortenUrl": shortID}).Decode(&urlDoc)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Shorten URL not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving the URL"})
+		return
+	}
+
+	c.Redirect(http.StatusFound, urlDoc.OriginalUrl)
 }

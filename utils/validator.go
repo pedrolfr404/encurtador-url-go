@@ -10,6 +10,7 @@ var blockedDomains = []string{
 	"t.co",
 	"tinyurl.com",
 	"cutt.ly",
+	"localhost.com/",
 }
 
 func IsValid(inputURL string) bool {

@@ -1,0 +1,3 @@
+MONGO_URI="mong_connect_string"
+db="db_name"
+collection="collection_name"
